@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>跨境电商 AI 智能运营系统</title>
+    <!-- ECharts 图表库 -->
+    <script src="https://cdn.bootcdn.net/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
+    <!-- Markdown 渲染库 -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f3f6f9; color: #1f2329; margin: 0; padding: 30px; }
+        .container { max-width: 1600px; margin: 0 auto; }
+        
+        /* 顶部标题与搜索栏 */
+        .header { margin-bottom: 25px; }
+        .header h1 { margin: 0; font-size: 24px; font-weight: 600; color: #1f2329; }
+        .header p { margin: 5px 0 0 0; color: #646a73; font-size: 14px; }
+        .control-panel { display: flex; gap: 15px; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.04); margin-bottom: 25px; border: 1px solid #eef0f3; }
+        input[type="text"] { flex: 1; padding: 10px 15px; border: 1px solid #d9d9d9; border-radius: 6px; font-size: 15px; outline: none; }
+        input[type="text"]:focus { border-color: #3370ff; }
+        button { padding: 10px 24px; background: #3370ff; color: white; border: none; border-radius: 6px; font-size: 15px; cursor: pointer; transition: 0.2s; }
+        button:hover { background: #245bdb; }
+        
+        /* 核心布局：上 1，下 2 */
+        .dashboard-top { margin-bottom: 25px; }
+        .dashboard-bottom { display: grid; grid-template-columns: 1fr 1.2fr; gap: 25px; }
+        
+        /* 卡片通用样式 */
+        .card { background: #fff; border-radius: 10px; padding: 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.03); border: 1px solid #eef0f3; display: flex; flex-direction: column; }
+        .card-title { font-size: 16px; font-weight: 600; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; }
+        .card-title span { display: flex; align-items: center; }
+        .card-title span::before { content: ''; display: inline-block; width: 4px; height: 16px; background: #3370ff; border-radius: 2px; margin-right: 10px; }
+        
+        /* 图表高度拉满 */
+        #price-chart { width: 100%; height: 400px; }
+        
+        /* 商品列表 */
+        .product-list { max-height: 500px; overflow-y: auto; padding-right: 5px; }
+        .product-list::-webkit-scrollbar { width: 6px; }
+        .product-list::-webkit-scrollbar-thumb { background: #d9d9d9; border-radius: 3px; }
+        .product-item { display: flex; gap: 15px; padding: 15px; border-bottom: 1px solid #f0f2f5; align-items: center; transition: 0.2s; }
+        .product-item:hover { background: #f8f9fa; }
+        .product-item:last-child { border-bottom: none; }
+        .product-item img { width: 60px; height: 60px; object-fit: contain; background: #fff; border-radius: 6px; border: 1px solid #eef0f3; padding: 4px; }
+        .product-info { flex: 1; }
+        .product-info h4 { margin: 0 0 6px 0; font-size: 14px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .product-info p { margin: 0; font-size: 12px; color: #646a73; display: flex; align-items: center; gap: 8px; }
+        .brand-tag { background: #e8f0ff; color: #3370ff; padding: 2px 8px; border-radius: 4px; font-size: 11px; }
+        .price-tag { color: #f54a45; font-weight: 600; font-size: 16px; margin-left: auto; }
+        .product-link { text-decoration: none; color: #1f2329; font-weight: 600; transition: 0.2s; }
+        .product-link:hover { color: #3370ff; text-decoration: underline; }
+        
+        /* AI 报告样式 */
+        .report-area { background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid #eef0f3; font-size: 14px; line-height: 1.8; max-height: 500px; overflow-y: auto; color: #1f2329; }
+        .report-area h1, .report-area h2, .report-area h3 { color: #1f2329; margin-top: 20px; margin-bottom: 10px; font-weight: 600; }
+        .report-area h1 { font-size: 18px; border-bottom: 2px solid #eef0f3; padding-bottom: 10px; }
+        .report-area h2 { font-size: 16px; color: #3370ff; }
+        .report-area table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 13px; }
+        .report-area th { background: #f0f2f5; text-align: left; padding: 8px 12px; border: 1px solid #eef0f3; }
+        .report-area td { padding: 8px 12px; border: 1px solid #eef0f3; }
+        .report-area blockquote { margin: 15px 0; padding: 10px 15px; background: #e8f0ff; border-left: 4px solid #3370ff; color: #1f2329; border-radius: 4px; }
+        .report-area strong { color: #1f2329; font-weight: 600; }
+        
+        .loading { display: none; text-align: center; color: #3370ff; font-weight: 600; margin: 20px 0; }
+        .download-btn { padding: 6px 14px; font-size: 13px; background: #e8f0ff; color: #3370ff; border: 1px solid #3370ff; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 5px; }
+        .download-btn:hover { background: #d0e2ff; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 顶部栏 -->
+        <div class="header">
+            <h1>跨境电商 AI 智能运营系统</h1>
+            <p>实时监控 · 竞品分析 · RAG 合规审查</p>
+        </div>
+        
+        <!-- 搜索控制栏 -->
+        <div class="control-panel">
+            <input type="text" id="keyword" placeholder="输入竞品关键词" value="portable fan">
+            <button onclick="startScrape()">开始监控抓取</button>
+        </div>
+        
+        <div id="loading" class="loading">Agent 正在穿透反爬并呼叫 DeepSeek 深度分析中...</div>
+        
+        <!-- 第一行：全宽图表 -->
+        <div class="dashboard-top">
+            <div class="card">
+                <div class="card-title"><span>竞品价格分布全景图</span></div>
+                <div id="price-chart"></div>
+            </div>
+        </div>
+        
+        <!-- 第二行：左右分栏 -->
+        <div class="dashboard-bottom">
+            <!-- 左边：排行榜 -->
+            <div class="card">
+                <div class="card-title"><span>实时竞品排行榜 (Top 15)</span></div>
+                <div class="product-list" id="product-list"><div style="color: #8f959e; text-align: center; padding: 40px 0;">等待数据...</div></div>
+            </div>
+            
+            <!-- 右边：AI 报告 -->
+            <div class="card">
+                <div class="card-title">
+                    <span>DeepSeek 商业合规分析报告</span>
+                    <button class="download-btn" onclick="downloadReport()">📥 下载报告</button>
+                </div>
+                <div class="report-area" id="report-area">等待生成...</div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const chartDom = document.getElementById('price-chart');
+        const myChart = echarts.init(chartDom);
+        
+        async function startScrape() {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('product-list').innerHTML = '<div style="color: #3370ff; text-align: center; padding: 40px 0;">正在抓取中...</div>';
+            document.getElementById('report-area').innerHTML = 'AI 正在深度思考并生成策略...';
+
+            try {
+                await fetch('/api/scrape', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ keyword: document.getElementById('keyword').value, platform: 'amazon' })
+                });
+                
+                let checkCount = 0;
+                const timer = setInterval(async () => {
+                    const hasData = await fetchData();
+                    checkCount++;
+                    if (hasData || checkCount > 15) {
+                        clearInterval(timer);
+                        document.getElementById('loading').style.display = 'none';
+                    }
+                }, 2000);
+
+            } catch (error) {
+                alert("触发失败，请检查后端");
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        async function fetchData() {
+            let hasData = false;
+            try {
+                const prodRes = await fetch('/api/products');
+                const prodData = await prodRes.json();
+                const prodList = document.getElementById('product-list');
+                
+                if (prodData.count > 0) {
+                    hasData = true;
+                    prodList.innerHTML = prodData.data.map(p => `
+                        <div class="product-item">
+                            <img src="${p.img_url}" referrerpolicy="no-referrer" onerror="this.src='https://images.unsplash.com/photo-1580918343679-9d9ce515f8cb?w=100&h=100&fit=crop'">
+                            <div class="product-info">
+                                <a href="https://www.amazon.com/s?k=${encodeURIComponent(p.title)}" target="_blank" class="product-link">
+                                    <h4>${p.title}</h4>
+                                </a>
+                                <p><span class="brand-tag">${p.brand}</span> 评分 ⭐ ${p.rating}</p>
+                            </div>
+                            <div class="price-tag">$${p.price}</div>
+                        </div>`).join('');
+                    
+                    const titles = prodData.data.map(p => p.brand); 
+                    const prices = prodData.data.map(p => p.price);
+                    
+                    myChart.setOption({
+                        tooltip: { 
+                            trigger: 'axis',
+                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                            borderColor: '#eef0f3',
+                            textStyle: { color: '#1f2329' },
+                            axisPointer: { type: 'shadow' }
+                        },
+                        dataZoom: [
+                            {
+                                type: 'slider',
+                                show: true,
+                                start: 0,
+                                end: 40, 
+                                bottom: 10,
+                                height: 24,
+                                borderColor: '#eef0f3',
+                                fillerColor: 'rgba(51, 112, 255, 0.1)',
+                                handleStyle: { color: '#3370ff' }
+                            },
+                            {
+                                type: 'inside',
+                                start: 0,
+                                end: 40
+                            }
+                        ],
+                        grid: { left: '3%', right: '5%', bottom: '15%', top: '15%', containLabel: true },
+                        xAxis: { 
+                            type: 'category', 
+                            data: titles, 
+                            axisLabel: { 
+                                color: '#646a73', 
+                                interval: 0, 
+                                rotate: 35, 
+                                fontSize: 12, 
+                                width: 80, 
+                                overflow: 'truncate'
+                            },
+                            axisLine: { lineStyle: { color: '#eef0f3' } },
+                            axisTick: { show: false }
+                        },
+                        yAxis: { 
+                            type: 'value', 
+                            axisLabel: { color: '#646a73' }, 
+                            splitLine: { lineStyle: { color: '#f0f2f5', type: 'dashed' } },
+                            axisLine: { show: false }
+                        },
+                        series: [{
+                            data: prices,
+                            type: 'bar',
+                            barWidth: '25%',
+                            itemStyle: {
+                                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                    { offset: 0, color: '#4facfe' },
+                                    { offset: 1, color: '#00f2fe' }
+                                ]),
+                                borderRadius: [6, 6, 0, 0],
+                                shadowColor: 'rgba(0, 0, 0, 0.1)',
+                                shadowBlur: 5
+                            },
+                            label: {
+                                show: true,
+                                position: 'top',
+                                color: '#3370ff',
+                                fontWeight: 'bold',
+                                formatter: '${c}'
+                            }
+                        }]
+                    });
+                }
+
+                const reportRes = await fetch('/api/reports');
+                const reportData = await reportRes.json();
+                if (reportData.count > 0) {
+                    const mdText = reportData.data[reportData.data.length - 1].content;
+                    document.getElementById('report-area').innerHTML = marked.parse(mdText);
+                }
+            } catch (e) { 
+                console.error(e); 
+            }
+            return hasData;
+        }
+
+        function downloadReport() {
+            const reportText = document.getElementById('report-area').innerText;
+            if (!reportText || reportText === '等待生成...' || reportText.includes('AI 正在深度思考')) {
+                alert("目前没有可下载的报告，请先点击抓取！");
+                return;
+            }
+            const blob = new Blob([reportText], { type: 'text/markdown;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `跨境电商竞品分析报告_${new Date().getTime()}.md`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
